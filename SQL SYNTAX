@@ -1,0 +1,59 @@
+Some example SQL, various syntax and usage across different example cases. All random/anonymised.
+
+# Table Creation
+CREATE TABLE schools (
+    school_id INT PRIMARY KEY,
+    school_name VARCHAR(100),
+    teacher_id INT
+);
+
+# Simple data insertion
+INSERT INTO schools (school_id, school_name, teacher_id)
+VALUES (1, 'CVMS', 101), 
+       (2, 'Oratory', 102),
+       (3, 'Sacred Heart', 103);
+
+# Utilising UPDATE to change all data, in this case, an average increase in height, lets say..
+UPDATE students
+SET height = height * 1.03
+WHERE school_id = (SELECT school_id FROM schools WHERE school_name = 'CVMS');
+
+# Removing all students from current database that have graduated
+DELETE FROM students
+WHERE grad_date < '2024-08-01';
+
+# Calculate running grade total per student
+SELECT student_id, exam_year, grade,
+       SUM(grade_amount) OVER (PARTITION BY student_id ORDER BY exam_year) AS running_total
+FROM students;
+
+# Calculating top ten students per school
+WITH School_Grades AS (
+    SELECT school_id, first_name, last_name, grade,
+           ROW_NUMBER() OVER (PARTITION BY school_id ORDER BY grade DESC) AS grade_rank
+    FROM students
+)
+SELECT school_id, first_name, last_name, grade
+FROM School_Grades
+WHERE grade_rank <= 10;
+
+# IF/ELSE/CASE statements, just an example :)
+SELECT student_id, first_name, last_name, 
+       CASE 
+           WHEN grade < 50 THEN 'C'
+           WHEN grade BETWEEN 50 AND 70 THEN 'B'
+           ELSE 'A'
+       END AS grade_category
+FROM students;
+
+# Students who have above average grades
+SELECT first_name, last_name, grade
+FROM students
+WHERE grade > (SELECT AVG(grade) FROM students);
+
+# Some table joining, all students LEFT joined by school
+SELECT s.school_name, COUNT(t.student_id) AS num_students
+FROM schools s
+LEFT JOIN students t ON s.school_id = t.school_id
+GROUP BY s.school_name;
+
